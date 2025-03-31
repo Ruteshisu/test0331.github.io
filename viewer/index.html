@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>画像ビューア</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-family: sans-serif;
+      margin: 40px;
+    }
+
+    #image-viewer {
+      max-width: 80%;
+      max-height: 80vh;
+      border: 1px solid #ccc;
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <img id="image-viewer" src="../images/image1.png" alt="表示中の画像">
+  <button onclick="nextImage()">▶ 次の画像</button>
+
+  <script>
+    const imageList = [
+      "../images/pakupaku.png"
+    ];
+
+    let currentIndex = 0;
+    const imgEl = document.getElementById("image-viewer");
+
+    function nextImage() {
+      currentIndex = (currentIndex + 1) % imageList.length;
+      imgEl.src = imageList[currentIndex];
+    }
+  </script>
+
+</body>
+</html>
