@@ -1,11 +1,27 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>My GitHub Page</title>
-</head>
 <body>
-  <h1>Hello, world!</h1>
-  <p>初めてのGitHub Pages</p>
+  <div id="gallery" style="display: none">
+    <img src="images/pakupaku.png">
+    <img src="images/pakupaku.png">
+  </div>
+  <img id="slideshow" src="" style="max-width:100%;">
+
+  <button onclick="nextImage()">▶ 次へ</button>
+
+  <script>
+    const gallery = document.querySelectorAll('#gallery img');
+    const display = document.getElementById('slideshow');
+    let current = 0;
+
+    function showImage(index) {
+      display.src = gallery[index].src;
+    }
+
+    function nextImage() {
+      current = (current + 1) % gallery.length;
+      showImage(current);
+    }
+
+    // 初期表示
+    showImage(current);
+  </script>
 </body>
-</html>
