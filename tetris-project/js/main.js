@@ -1,4 +1,6 @@
 // main.js
+console.log("main.js 読み込まれました！");
+
 import { Arena } from './arena.js';
 import { Player } from './player.js';
 import { setupInput } from './input.js';
