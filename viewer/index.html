@@ -5,49 +5,87 @@
   <title>画像ビューア</title>
   <style>
     body {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
       font-family: sans-serif;
-      margin: 40px;
+      text-align: center;
+      margin: 2em;
     }
-
-    #image-viewer {
+    img {
       max-width: 80%;
-      max-height: 80vh;
-      border: 1px solid #ccc;
-      margin-bottom: 20px;
+      max-height: 70vh;
+      display: block;
+      margin: 1em auto;
     }
-
-    button {
-      padding: 10px 20px;
+    select, button {
       font-size: 16px;
+      padding: 0.5em 1em;
+      margin: 0.5em;
     }
   </style>
 </head>
 <body>
 
-  <img id="image-viewer" src="../images/pakupaku.png" alt="表示中の画像">
-  <button onclick="nextImage()">▶ 次の画像</button>
+  <h1>画像ビューア</h1>
+
+  <label for="folderSelect">フォルダを選択：</label>
+  <select id="folderSelect">
+    <option value="aaa">aaa</option>
+    <option value="bbb">bbb</option>
+    <option value="ccc">ccc</option>
+  </select>
+
+  <br>
+
+  <img id="imageViewer" src="" alt="表示中の画像">
+  <br>
+  <button onclick="prevImage()">◀ 前へ</button>
+  <button onclick="nextImage()">▶ 次へ</button>
 
   <script>
-    const imageList = [
-      "../images/pakupaku.png",
-      "../images/kyouka1.png",
-      "../images/shibou1.png",
-      "../images/shibou2.png",
-      "../images/airi1.png",
-      "../images/airi2.png",
-      "../images/airi.gif",
-    ];
+    const folderSelect = document.getElementById('folderSelect');
+    const imageViewer = document.getElementById('imageViewer');
 
+    let currentFolder = folderSelect.value;
+    let imageList = [];
     let currentIndex = 0;
-    const imgEl = document.getElementById("image-viewer");
+
+    folderSelect.addEventListener("change", () => {
+      currentFolder = folderSelect.value;
+      currentIndex = 0;
+      loadImageList(currentFolder);
+    });
+
+    async function loadImageList(folder) {
+      try {
+        const res = await fetch(`../images/${folder}/images.json`);
+        imageList = await res.json();
+        updateImage();
+      } catch (err) {
+        console.error("画像リストの読み込みに失敗しました:", err);
+        imageViewer.src = "";
+        imageViewer.alt = "画像リストが読み込めませんでした";
+      }
+    }
+
+    function updateImage() {
+      if (imageList.length === 0) return;
+      const fileName = imageList[currentIndex];
+      imageViewer.src = `../images/${currentFolder}/${fileName}`;
+    }
 
     function nextImage() {
+      if (imageList.length === 0) return;
       currentIndex = (currentIndex + 1) % imageList.length;
-      imgEl.src = imageList[currentIndex];
+      updateImage();
     }
+
+    function prevImage() {
+      if (imageList.length === 0) return;
+      currentIndex = (currentIndex - 1 + imageList.length) % imageList.length;
+      updateImage();
+    }
+
+    // 初期表示
+    loadImageList(currentFolder);
   </script>
 
 </body>
