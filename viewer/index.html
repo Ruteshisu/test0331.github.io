@@ -27,11 +27,7 @@
   <h1>画像ビューア</h1>
 
   <label for="folderSelect">フォルダを選択：</label>
-  <select id="folderSelect">
-    <option value="aaa">aaa</option>
-    <option value="bbb">bbb</option>
-    <option value="ccc">ccc</option>
-  </select>
+  <select id="folderSelect"></select>
 
   <br>
 
@@ -53,6 +49,32 @@
       currentIndex = 0;
       loadImageList(currentFolder);
     });
+
+
+	// ▼ JSONからフォルダ一覧を読み込む
+	async function loadFolderList() {
+	  try {
+	    const res = await fetch('list.json');
+	    const folders = await res.json();
+
+	    // セレクトボックスに追加
+	    folders.forEach(folder => {
+	      const option = document.createElement('option');
+	      option.value = folder;
+	      option.textContent = folder;
+	      folderSelect.appendChild(option);
+	    });
+
+	    // 最初のフォルダを選んで読み込み
+	    if (folders.length > 0) {
+	      currentFolder = folders[0];
+	      folderSelect.value = currentFolder;
+	      loadImageList(currentFolder);
+	    }
+	  } catch (err) {
+	    console.error("フォルダリストの読み込みに失敗:", err);
+	  }
+	}
 
     async function loadImageList(folder) {
       try {
@@ -84,8 +106,9 @@
       updateImage();
     }
 
-    // 初期表示
-    loadImageList(currentFolder);
+	// 初期表示
+	loadFolderList();
+	
   </script>
 
 </body>
