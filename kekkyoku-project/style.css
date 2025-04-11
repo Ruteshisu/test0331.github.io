@@ -1,0 +1,13 @@
+body {
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: #87ceeb; /* 空の背景色 */
+}
+
+canvas {
+  border: 2px solid #333;
+  background-color: #cceeff; /* キャンバスの初期背景 */
+}
