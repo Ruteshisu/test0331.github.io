@@ -94,24 +94,30 @@
     }
 
     function updateEnemy() {
-      if (stageCleared || hitStop || enemy.hp <= 0) return;
+  if (stageCleared || hitStop || enemy.hp <= 0) return;
 
-      const dx = player.x - enemy.x;
-      if (Math.abs(dx) > 40) {
-        enemy.x += dx > 0 ? 1 : -1;
-        enemyState = "move";
+  const dx = player.x - enemy.x;
+  const distance = Math.abs(dx);
+  const direction = dx > 0 ? 1 : -1;
+
+  if (distance > 100) {
+    enemy.x += direction * (Math.random() < 0.5 ? 1 : 0); // たまに近づく
+    enemyState = "move";
+  } else if (distance < 40) {
+    enemy.x -= direction * (Math.random() < 0.5 ? 1 : 0); // たまに離れる
+    enemyState = "dodge";
+  } else {
+    if (Date.now() > enemyAttackCooldown) {
+      if (Math.random() < 0.1) {
+        enemyState = "attack";
+        createEnemyHitbox();
+        enemyAttackCooldown = Date.now() + 800 + Math.random() * 1000;
       } else {
-        if (Date.now() > enemyAttackCooldown) {
-          if (Math.random() < 0.03) {
-            enemyState = "attack";
-            createEnemyHitbox();
-            enemyAttackCooldown = Date.now() + 800 + Math.random() * 1000;
-          } else {
-            enemyState = "idle";
-          }
-        }
+        enemyState = "idle";
       }
     }
+  }
+          }
 
     function updateEnemyHitboxes() {
       const now = Date.now();
@@ -189,7 +195,12 @@ function drawHPBar(x, y, hp, label) {
 function drawClearText() {
   ctx.fillStyle = "white";
   ctx.font = "32px sans-serif";
-  ctx.fillText("CLEAR!", canvas.width / 2 - 60, canvas.height / 2);
+  if (player.hp <= 0) {
+    ctx.fillText("YOU LOSE", canvas.width / 2 - 80, canvas.height / 2);
+  } else {
+    ctx.fillText("YOU WIN", canvas.width / 2 - 80, canvas.height / 2);
+  }
+
 }
 
 function drawStartText() {
@@ -244,6 +255,7 @@ function updatePlayer() {
       enemy.hp = Math.max(0, enemy.hp - 1);
       enemy.hit = true;
       enemy.hitTime = now;
+      enemy.x += (enemy.x > player.x ? 1 : -1) * 20;
       h.hitDone = true;
       hitStop = true;
       hitStopTimer = now;
