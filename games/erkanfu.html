@@ -51,7 +51,19 @@
       vy: 0,  // Y軸の速度
       onGround: true,  // 地面に接地しているか
       state: "idle",  // プレイヤーの状態
-      hp: 10  // プレイヤーのHP
+      hp: 10,  // プレイヤーのHP
+      image: new Image()  // プレイヤーの画像
+    };
+
+    // プレイヤーの画像を読み込む
+    player.image.src = "player.png";  // 画像ファイルのパスを指定
+    player.image.onload = () => {
+      console.log("プレイヤー画像の読み込みが完了しました");
+      player.image.errorOccurred = false;
+    };
+    player.image.onerror = () => {
+      console.log("プレイヤー画像の読み込みに失敗しました");
+      player.image.errorOccurred = true;
     };
 
     // 敵の初期設定
@@ -186,6 +198,23 @@
 
     // プレイヤーの描画
     function drawPlayer() {
+      // 画像の読み込みエラーをハンドリング
+      if (player.image.complete && !player.image.errorOccurred) {
+        try {
+          // 画像が正常に読み込まれている場合は画像を描画
+          ctx.drawImage(player.image, player.x, player.y, player.width, player.height);
+        } catch (error) {
+          // drawImageでエラーが発生した場合はフォールバック
+          drawPlayerFallback();
+        }
+      } else {
+        // 画像が読み込まれていないか、エラーが発生した場合はフォールバック
+        drawPlayerFallback();
+      }
+    }
+
+    // プレイヤーのフォールバック描画
+    function drawPlayerFallback() {
       switch (player.state) {
         case "idle": ctx.fillStyle = "white"; break;
         case "move": ctx.fillStyle = "lightblue"; break;
