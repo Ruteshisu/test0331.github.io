@@ -111,40 +111,38 @@
       const direction = dx > 0 ? 1 : -1;
 
       // 攻撃範囲の設定
-      const ATTACK_RANGE = 50;  // 攻撃が当たる範囲
-      const SAFE_DISTANCE = 70;  // 安全な距離
-      const DANGER_DISTANCE = 30;  // 危険な距離
+      const ATTACK_RANGE = 100;  // 攻撃が当たる範囲（広めに設定）
+      const IDEAL_DISTANCE = 80; // 理想的な距離
+      const MOVE_SPEED = 1;      // 移動速度（遅くする）
+      const POSITION_TOLERANCE = 10; // 位置の許容範囲
 
       // 距離に応じた敵の行動
-      if (distance > SAFE_DISTANCE) {
-        // プレイヤーが遠すぎる場合は近づく
-        enemy.x += direction * 2;
+      if (distance > ATTACK_RANGE + 20) {
+        // プレイヤーが遠すぎる場合はゆっくり近づく
+        enemy.x += direction * MOVE_SPEED;
         enemyState = "move";
-      } else if (distance < DANGER_DISTANCE) {
-        // プレイヤーが近すぎる場合は離れる
-        enemy.x -= direction * 2;
+      } else if (distance < IDEAL_DISTANCE - POSITION_TOLERANCE) {
+        // プレイヤーが近すぎる場合はゆっくり離れる
+        enemy.x -= direction * MOVE_SPEED;
         enemyState = "dodge";
       } else {
-        // 攻撃範囲のギリギリの位置で前後をうろうろ
-        const targetX = player.x + (direction * ATTACK_RANGE);
+        // 理想的な距離の範囲内での動き
+        const targetX = player.x - (direction * IDEAL_DISTANCE);
         const moveToTarget = Math.sign(targetX - enemy.x);
         
-        // ランダムな要素を加えて予測不能な動きを実現
-        if (Math.random() < 0.7) {
-          enemy.x += moveToTarget * (Math.random() < 0.5 ? 1 : 0);
+        // よりゆっくりとした動きで位置取り
+        if (Math.abs(targetX - enemy.x) > POSITION_TOLERANCE) {
+          enemy.x += moveToTarget * (MOVE_SPEED * 0.5);
+          enemyState = "move";
         } else {
-          // たまに逆方向に動く
-          enemy.x -= moveToTarget * (Math.random() < 0.3 ? 1 : 0);
-        }
-
-        // 攻撃判定
-        if (Date.now() > enemyAttackCooldown) {
-          if (Math.random() < 0.1 && distance < ATTACK_RANGE + 10) {
-            enemyState = "attack";
-            createEnemyHitbox();
-            enemyAttackCooldown = Date.now() + 800 + Math.random() * 1000;
-          } else {
-            enemyState = "idle";
+          enemyState = "idle";
+          // 理想的な位置にいる場合、時々攻撃
+          if (Date.now() > enemyAttackCooldown) {
+            if (Math.random() < 0.05) {  // 攻撃確率を下げる
+              enemyState = "attack";
+              createEnemyHitbox();
+              enemyAttackCooldown = Date.now() + 1500 + Math.random() * 1000;  // クールダウンを長めに
+            }
           }
         }
       }
