@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>シンプル格闘ゲーム（操作デモ）</title>
   <style>
+    /* ゲーム画面のスタイル設定 */
     body {
       margin: 0;
       background: #222;
@@ -22,47 +23,53 @@
 <body>
   <canvas id="gameCanvas" width="640" height="360"></canvas>
   <script>
+    // キャンバスの設定
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    const keys = {};
-    let hitboxes = [];
-    let enemyHitboxes = [];
-    let stage = 1;
-    let stageCleared = false;
-    let clearTimer = 0;
-    let startTime = Date.now();
-    let hitStop = false;
-    let hitStopTimer = 0;
-    let shakeOffset = { x: 0, y: 0 };
-    let enemyState = "idle";
-    let enemyAttackCooldown = 0;
+    // ゲームの状態管理用の変数
+    const keys = {};  // キー入力の状態を保持
+    let hitboxes = [];  // プレイヤーの攻撃判定
+    let enemyHitboxes = [];  // 敵の攻撃判定
+    let stage = 1;  // 現在のステージ
+    let stageCleared = false;  // ステージクリアフラグ
+    let clearTimer = 0;  // クリア時のタイマー
+    let startTime = Date.now();  // ゲーム開始時間
+    let hitStop = false;  // ヒットストップ効果のフラグ
+    let hitStopTimer = 0;  // ヒットストップのタイマー
+    let shakeOffset = { x: 0, y: 0 };  // 画面シェイク効果のオフセット
+    let enemyState = "idle";  // 敵の状態
+    let enemyAttackCooldown = 0;  // 敵の攻撃クールダウン
 
+    // プレイヤーの初期設定
     const player = {
       x: 100,
       y: 260,
       width: 30,
       height: 60,
-      vx: 0,
-      vy: 0,
-      onGround: true,
-      state: "idle",
-      hp: 10
+      vx: 0,  // X軸の速度
+      vy: 0,  // Y軸の速度
+      onGround: true,  // 地面に接地しているか
+      state: "idle",  // プレイヤーの状態
+      hp: 10  // プレイヤーのHP
     };
 
+    // 敵の初期設定
     const enemy = {
       x: 460,
       y: 260,
       width: 30,
       height: 60,
       hp: 10,
-      hit: false,
-      hitTime: 0
+      hit: false,  // ヒット状態か
+      hitTime: 0  // ヒットした時間
     };
 
-    const GRAVITY = 0.5;
-    const FLOOR_Y = 320;
+    // 物理演算の定数
+    const GRAVITY = 0.5;  // 重力
+    const FLOOR_Y = 320;  // 床のY座標
 
+    // ステージのリセット関数
     function resetStage() {
       player.x = 100;
       player.hp = 10;
@@ -73,6 +80,7 @@
       enemyAttackCooldown = 0;
     }
 
+    // プレイヤーの攻撃判定を作成
     function createHitbox(type) {
       const now = Date.now();
       const existing = hitboxes.find(h => h.type === type && now - h.timestamp < 200);
@@ -87,38 +95,65 @@
       hitboxes.push({ x, y: player.y + 20, width, height, timestamp: now, type, hitDone: false });
     }
 
+    // 敵の攻撃判定を作成
     function createEnemyHitbox() {
       const now = Date.now();
       const offsetX = player.x < enemy.x ? -20 : enemy.width;
       enemyHitboxes.push({ x: enemy.x + offsetX, y: enemy.y + 20, width: 20, height: 20, timestamp: now, hitDone: false });
     }
 
+    // 敵のAI更新
     function updateEnemy() {
-  if (stageCleared || hitStop || enemy.hp <= 0) return;
+      if (stageCleared || hitStop || enemy.hp <= 0) return;
 
-  const dx = player.x - enemy.x;
-  const distance = Math.abs(dx);
-  const direction = dx > 0 ? 1 : -1;
+      const dx = player.x - enemy.x;
+      const distance = Math.abs(dx);
+      const direction = dx > 0 ? 1 : -1;
 
-  if (distance > 100) {
-    enemy.x += direction * (Math.random() < 0.5 ? 1 : 0); // たまに近づく
-    enemyState = "move";
-  } else if (distance < 40) {
-    enemy.x -= direction * (Math.random() < 0.5 ? 1 : 0); // たまに離れる
-    enemyState = "dodge";
-  } else {
-    if (Date.now() > enemyAttackCooldown) {
-      if (Math.random() < 0.1) {
-        enemyState = "attack";
-        createEnemyHitbox();
-        enemyAttackCooldown = Date.now() + 800 + Math.random() * 1000;
+      // 攻撃範囲の設定
+      const ATTACK_RANGE = 50;  // 攻撃が当たる範囲
+      const SAFE_DISTANCE = 70;  // 安全な距離
+      const DANGER_DISTANCE = 30;  // 危険な距離
+
+      // 距離に応じた敵の行動
+      if (distance > SAFE_DISTANCE) {
+        // プレイヤーが遠すぎる場合は近づく
+        enemy.x += direction * 2;
+        enemyState = "move";
+      } else if (distance < DANGER_DISTANCE) {
+        // プレイヤーが近すぎる場合は離れる
+        enemy.x -= direction * 2;
+        enemyState = "dodge";
       } else {
-        enemyState = "idle";
-      }
-    }
-  }
-          }
+        // 攻撃範囲のギリギリの位置で前後をうろうろ
+        const targetX = player.x + (direction * ATTACK_RANGE);
+        const moveToTarget = Math.sign(targetX - enemy.x);
+        
+        // ランダムな要素を加えて予測不能な動きを実現
+        if (Math.random() < 0.7) {
+          enemy.x += moveToTarget * (Math.random() < 0.5 ? 1 : 0);
+        } else {
+          // たまに逆方向に動く
+          enemy.x -= moveToTarget * (Math.random() < 0.3 ? 1 : 0);
+        }
 
+        // 攻撃判定
+        if (Date.now() > enemyAttackCooldown) {
+          if (Math.random() < 0.1 && distance < ATTACK_RANGE + 10) {
+            enemyState = "attack";
+            createEnemyHitbox();
+            enemyAttackCooldown = Date.now() + 800 + Math.random() * 1000;
+          } else {
+            enemyState = "idle";
+          }
+        }
+      }
+
+      // 画面外に出ないように制限
+      enemy.x = Math.max(0, Math.min(canvas.width - enemy.width, enemy.x));
+    }
+
+    // 敵の攻撃判定の更新
     function updateEnemyHitboxes() {
       const now = Date.now();
       enemyHitboxes = enemyHitboxes.filter(h => {
@@ -135,150 +170,175 @@
       });
     }
 
+    // 当たり判定のチェック
     function checkCollision(a, b) {
-  return (
-    a.x < b.x + b.width &&
-    a.x + a.width > b.x &&
-    a.y < b.y + b.height &&
-    a.y + a.height > b.y
-  );
-}
-
-function drawStage() {
-  ctx.fillStyle = "#444";
-  ctx.fillRect(0, FLOOR_Y, canvas.width, canvas.height - FLOOR_Y);
-}
-
-function drawPlayer() {
-  switch (player.state) {
-    case "idle": ctx.fillStyle = "white"; break;
-    case "move": ctx.fillStyle = "lightblue"; break;
-    case "jump": ctx.fillStyle = "orange"; break;
-    case "punch": ctx.fillStyle = "red"; break;
-    case "kick": ctx.fillStyle = "yellow"; break;
-    default: ctx.fillStyle = "gray";
-  }
-  ctx.fillRect(player.x, player.y, player.width, player.height);
-}
-
-function drawEnemy() {
-  const now = Date.now();
-  if (enemy.hit && now - enemy.hitTime < 300) {
-    ctx.fillStyle = "red";
-  } else {
-    ctx.fillStyle = "green";
-    enemy.hit = false;
-  }
-  ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
-}
-
-function drawHitboxes() {
-  ctx.fillStyle = "rgba(255, 0, 0, 0.6)";
-  hitboxes.forEach(h => {
-    ctx.fillRect(h.x, h.y, h.width, h.height);
-  });
-  ctx.fillStyle = "rgba(255, 255, 0, 0.4)";
-  enemyHitboxes.forEach(h => {
-    ctx.fillRect(h.x, h.y, h.width, h.height);
-  });
-}
-
-function drawHPBar(x, y, hp, label) {
-  ctx.fillStyle = "white";
-  ctx.fillText(label, x, y - 5);
-  ctx.fillStyle = "red";
-  ctx.fillRect(x, y, 100, 10);
-  ctx.fillStyle = "lime";
-  ctx.fillRect(x, y, hp * 10, 10);
-}
-
-function drawClearText() {
-  ctx.fillStyle = "white";
-  ctx.font = "32px sans-serif";
-  if (player.hp <= 0) {
-    ctx.fillText("YOU LOSE", canvas.width / 2 - 80, canvas.height / 2);
-  } else {
-    ctx.fillText("YOU WIN", canvas.width / 2 - 80, canvas.height / 2);
-  }
-
-}
-
-function drawStartText() {
-  ctx.fillStyle = "white";
-  ctx.font = "32px sans-serif";
-  ctx.fillText("START!", canvas.width / 2 - 60, canvas.height / 2);
-}
-
-function updatePlayer() {
-  if (stageCleared || hitStop) return;
-  if (keys["ArrowLeft"]) {
-    player.vx = -3;
-    player.state = "move";
-  } else if (keys["ArrowRight"]) {
-    player.vx = 3;
-    player.state = "move";
-  } else {
-    player.vx = 0;
-    if (player.onGround) player.state = "idle";
-  }
-  if (keys["ArrowUp"] && player.onGround) {
-    player.vy = -10;
-    player.onGround = false;
-    player.state = "jump";
-  }
-  player.x += player.vx;
-  player.y += player.vy;
-  if (!player.onGround) {
-    player.vy += GRAVITY;
-    if (player.y >= FLOOR_Y - player.height) {
-      player.y = FLOOR_Y - player.height;
-      player.vy = 0;
-      player.onGround = true;
+      return (
+        a.x < b.x + b.width &&
+        a.x + a.width > b.x &&
+        a.y < b.y + b.height &&
+        a.y + a.height > b.y
+      );
     }
-  }
-  if (keys["z"]) {
-    player.state = "punch";
-    createHitbox("punch");
-    keys["z"] = false;
-  } else if (keys["x"]) {
-    player.state = "kick";
-    createHitbox("kick");
-    keys["x"] = false;
-  }
-}
 
-    function updateHitboxes() {
-  const now = Date.now();
-  hitboxes = hitboxes.filter(h => {
-    const stillActive = now - h.timestamp < 200;
-    if (stillActive && checkCollision(h, enemy) && enemy.hp > 0 && !h.hitDone) {
-      enemy.hp = Math.max(0, enemy.hp - 1);
-      enemy.hit = true;
-      enemy.hitTime = now;
-      enemy.x += (enemy.x > player.x ? 1 : -1) * 20;
-      h.hitDone = true;
-      hitStop = true;
-      hitStopTimer = now;
-      shakeOffset.x = Math.random() * 6 - 3;
-      shakeOffset.y = Math.random() * 6 - 3;
+    // ステージの描画
+    function drawStage() {
+      ctx.fillStyle = "#444";
+      ctx.fillRect(0, FLOOR_Y, canvas.width, canvas.height - FLOOR_Y);
     }
-    return stillActive;
-  });
-}
 
-function gameLoop() {
+    // プレイヤーの描画
+    function drawPlayer() {
+      switch (player.state) {
+        case "idle": ctx.fillStyle = "white"; break;
+        case "move": ctx.fillStyle = "lightblue"; break;
+        case "jump": ctx.fillStyle = "orange"; break;
+        case "punch": ctx.fillStyle = "red"; break;
+        case "kick": ctx.fillStyle = "yellow"; break;
+        default: ctx.fillStyle = "gray";
+      }
+      ctx.fillRect(player.x, player.y, player.width, player.height);
+    }
+
+    // 敵の描画
+    function drawEnemy() {
       const now = Date.now();
+      if (enemy.hit && now - enemy.hitTime < 300) {
+        ctx.fillStyle = "red";
+      } else {
+        ctx.fillStyle = "green";
+        enemy.hit = false;
+      }
+      ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+    }
+
+    // 攻撃判定の描画
+    function drawHitboxes() {
+      ctx.fillStyle = "rgba(255, 0, 0, 0.6)";
+      hitboxes.forEach(h => {
+        ctx.fillRect(h.x, h.y, h.width, h.height);
+      });
+      ctx.fillStyle = "rgba(255, 255, 0, 0.4)";
+      enemyHitboxes.forEach(h => {
+        ctx.fillRect(h.x, h.y, h.width, h.height);
+      });
+    }
+
+    // HPバーの描画
+    function drawHPBar(x, y, hp, label) {
+      ctx.fillStyle = "white";
+      ctx.fillText(label, x, y - 5);
+      ctx.fillStyle = "red";
+      ctx.fillRect(x, y, 100, 10);
+      ctx.fillStyle = "lime";
+      ctx.fillRect(x, y, hp * 10, 10);
+    }
+
+    // クリアテキストの描画
+    function drawClearText() {
+      ctx.fillStyle = "white";
+      ctx.font = "32px sans-serif";
+      if (player.hp <= 0) {
+        ctx.fillText("YOU LOSE", canvas.width / 2 - 80, canvas.height / 2);
+      } else {
+        ctx.fillText("YOU WIN", canvas.width / 2 - 80, canvas.height / 2);
+      }
+    }
+
+    // スタートテキストの描画
+    function drawStartText() {
+      ctx.fillStyle = "white";
+      ctx.font = "32px sans-serif";
+      ctx.fillText("START!", canvas.width / 2 - 60, canvas.height / 2);
+    }
+
+    // プレイヤーの更新
+    function updatePlayer() {
+      if (stageCleared || hitStop) return;
+      
+      // 左右移動
+      if (keys["ArrowLeft"]) {
+        player.vx = -3;
+        player.state = "move";
+      } else if (keys["ArrowRight"]) {
+        player.vx = 3;
+        player.state = "move";
+      } else {
+        player.vx = 0;
+        if (player.onGround) player.state = "idle";
+      }
+
+      // ジャンプ
+      if (keys["ArrowUp"] && player.onGround) {
+        player.vy = -10;
+        player.onGround = false;
+        player.state = "jump";
+      }
+
+      // 位置の更新
+      player.x += player.vx;
+      player.y += player.vy;
+
+      // 重力の適用
+      if (!player.onGround) {
+        player.vy += GRAVITY;
+        if (player.y >= FLOOR_Y - player.height) {
+          player.y = FLOOR_Y - player.height;
+          player.vy = 0;
+          player.onGround = true;
+        }
+      }
+
+      // 攻撃入力
+      if (keys["z"]) {
+        player.state = "punch";
+        createHitbox("punch");
+        keys["z"] = false;
+      } else if (keys["x"]) {
+        player.state = "kick";
+        createHitbox("kick");
+        keys["x"] = false;
+      }
+    }
+
+    // プレイヤーの攻撃判定の更新
+    function updateHitboxes() {
+      const now = Date.now();
+      hitboxes = hitboxes.filter(h => {
+        const stillActive = now - h.timestamp < 200;
+        if (stillActive && checkCollision(h, enemy) && enemy.hp > 0 && !h.hitDone) {
+          enemy.hp = Math.max(0, enemy.hp - 1);
+          enemy.hit = true;
+          enemy.hitTime = now;
+          enemy.x += (enemy.x > player.x ? 1 : -1) * 20;
+          h.hitDone = true;
+          hitStop = true;
+          hitStopTimer = now;
+          shakeOffset.x = Math.random() * 6 - 3;
+          shakeOffset.y = Math.random() * 6 - 3;
+        }
+        return stillActive;
+      });
+    }
+
+    // メインゲームループ
+    function gameLoop() {
+      const now = Date.now();
+      
+      // ヒットストップの更新
       if (hitStop && now - hitStopTimer > 100) {
         hitStop = false;
         shakeOffset = { x: 0, y: 0 };
       }
 
+      // 画面のクリアとシェイク効果の適用
       ctx.save();
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.translate(shakeOffset.x, shakeOffset.y);
 
+      // ゲーム要素の描画
       drawStage();
 
+      // ゲーム状態の更新
       if (now - startTime < 2000) {
         drawStartText();
       } else if (!stageCleared && !hitStop) {
@@ -288,13 +348,19 @@ function gameLoop() {
         updateEnemyHitboxes();
       }
 
+      // キャラクターとUIの描画
       drawPlayer();
       drawEnemy();
       drawHitboxes();
       drawHPBar(20, 20, player.hp, "PLAYER");
       drawHPBar(canvas.width - 120, 20, enemy.hp, "ENEMY");
 
+      // ステージクリアの処理
       if (enemy.hp <= 0 && !stageCleared) {
+        stageCleared = true;
+        clearTimer = now;
+      } else if (player.hp <= 0 && !stageCleared) {
+        // プレイヤーのHPが0になった場合もステージクリア状態にする
         stageCleared = true;
         clearTimer = now;
       }
@@ -311,9 +377,11 @@ function gameLoop() {
       requestAnimationFrame(gameLoop);
     }
 
+    // キー入力のイベントリスナー
     document.addEventListener("keydown", e => keys[e.key] = true);
     document.addEventListener("keyup", e => keys[e.key] = false);
 
+    // ゲームの開始
     gameLoop();
   </script>
 </body>
