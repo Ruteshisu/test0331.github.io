@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>ぷよぷよ</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="gameContainer">
+    <div id="ui">
+      <span>Score: <span id="score">0</span></span>
+      <span style="margin-left: 10px;">Chain: <span id="chain">0</span></span>
+      <button id="pauseBtn">Pause</button>
+      <button id="restartBtn">Restart</button>
+    </div>
+    <div id="playArea">
+      <canvas id="gameCanvas" width="192" height="384"></canvas>
+      <div id="nextContainer">
+        <span>Next:</span>
+        <canvas id="nextCanvas" width="64" height="64"></canvas>
+      </div>
+    </div>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html> 

@@ -1,0 +1,51 @@
+body {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: #000;
+}
+
+canvas {
+  border: 2px solid #333;
+  background: #111;
+}
+
+/* ゲームコンテナ全体 */
+#gameContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* UIバー */
+#ui {
+  margin-bottom: 10px;
+  color: #fff;
+}
+
+/* プレイエリア: ゲーム画面とネクストを横並び */
+#playArea {
+  display: flex;
+  align-items: flex-start;
+}
+
+/* ネクストぷよ表示用枠 */
+#nextContainer {
+  margin-left: 10px;
+  padding: 5px;
+  width: 80px;
+  height: 384px; /* canvas 高さに合わせる */
+  border: 2px solid #555;
+  background: #222;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#nextContainer span {
+  color: #fff;
+  margin-bottom: 5px;
+} 
